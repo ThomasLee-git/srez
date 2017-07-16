@@ -13,7 +13,7 @@ import tensorflow as tf
 FLAGS = tf.app.flags.FLAGS
 
 # Configuration (alphabetically)
-tf.app.flags.DEFINE_integer('batch_size', 16,
+tf.app.flags.DEFINE_integer('batch_size', 4,
                             "Number of samples per batch.")
 
 tf.app.flags.DEFINE_string('checkpoint_dir', 'checkpoint',
@@ -49,19 +49,19 @@ tf.app.flags.DEFINE_bool('log_device_placement', False,
 tf.app.flags.DEFINE_integer('sample_size', 64,
                             "Image sample size in pixels. Range [64,128]")
 
-tf.app.flags.DEFINE_integer('summary_period', 200,
+tf.app.flags.DEFINE_integer('summary_period', 1,
                             "Number of batches between summary data dumps")
 
 tf.app.flags.DEFINE_integer('random_seed', 0,
                             "Seed used to initialize rng.")
 
-tf.app.flags.DEFINE_integer('test_vectors', 16,
+tf.app.flags.DEFINE_integer('test_vectors', 4,
                             """Number of features to use for testing""")
                             
 tf.app.flags.DEFINE_string('train_dir', 'train',
                            "Output folder where training logs are dumped.")
 
-tf.app.flags.DEFINE_integer('train_time', 20,
+tf.app.flags.DEFINE_integer('train_time', 1,
                             "Time in minutes to train the model")
 
 def prepare_dirs(delete_train_dir=False):
@@ -100,7 +100,7 @@ def setup_tensorflow():
     random.seed(FLAGS.random_seed)
     np.random.seed(FLAGS.random_seed)
 
-    summary_writer = tf.train.SummaryWriter(FLAGS.train_dir, sess.graph)
+    summary_writer = tf.summary.FileWriter(FLAGS.train_dir, sess.graph)
 
     return sess, summary_writer
 
@@ -109,11 +109,12 @@ def _demo():
     if not tf.gfile.IsDirectory(FLAGS.checkpoint_dir):
         raise FileNotFoundError("Could not find folder `%s'" % (FLAGS.checkpoint_dir,))
 
-    # Setup global tensorflow state
-    sess, summary_writer = setup_tensorflow()
-
     # Prepare directories
     filenames = prepare_dirs(delete_train_dir=False)
+
+
+    # Setup global tensorflow state
+    sess, summary_writer = setup_tensorflow()
 
     # Setup async input queues
     features, labels = srez_input.setup_inputs(sess, filenames)
@@ -138,11 +139,12 @@ class TrainData(object):
         self.__dict__.update(dictionary)
 
 def _train():
-    # Setup global tensorflow state
-    sess, summary_writer = setup_tensorflow()
-
     # Prepare directories
     all_filenames = prepare_dirs(delete_train_dir=True)
+
+    # Setup global tensorflow state
+    # sess, summary_writer = setup_tensorflow()
+    sess = tf.InteractiveSession()
 
     # Separate training and test sets
     train_filenames = all_filenames[:-FLAGS.test_vectors]

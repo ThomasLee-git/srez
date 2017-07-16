@@ -19,10 +19,10 @@ def _summarize_progress(train_data, feature, label, gene_output, batch, suffix, 
 
     clipped = tf.maximum(tf.minimum(gene_output, 1.0), 0.0)
 
-    image   = tf.concat(2, [nearest, bicubic, clipped, label])
+    image   = tf.concat([nearest, bicubic, clipped, label], 2)
 
     image = image[0:max_samples,:,:,:]
-    image = tf.concat(0, [image[i,:,:,:] for i in range(max_samples)])
+    image = tf.concat([image[i,:,:,:] for i in range(max_samples)], 0)
     image = td.sess.run(image)
 
     filename = 'batch%06d_%s.png' % (batch, suffix)
@@ -62,8 +62,10 @@ def _save_checkpoint(train_data, batch):
 def train_model(train_data):
     td = train_data
 
-    summaries = tf.merge_all_summaries()
-    td.sess.run(tf.initialize_all_variables())
+    merged = tf.summary.merge_all()
+    train_writer = tf.summary.FileWriter(FLAGS.train_dir, td.sess.graph)
+    tf.global_variables_initializer().run()
+    train_writer.flush()
 
     lrval       = FLAGS.learning_rate_start
     start_time  = time.time()
@@ -76,7 +78,7 @@ def train_model(train_data):
     test_feature, test_label = td.sess.run([td.test_features, td.test_labels])
 
     while not done:
-        batch += 1
+
         gene_loss = disc_real_loss = disc_fake_loss = -1.234
 
         feed_dict = {td.learning_rate : lrval}
@@ -109,6 +111,8 @@ def train_model(train_data):
         if batch % FLAGS.checkpoint_period == 0:
             # Save checkpoint
             _save_checkpoint(td, batch)
+
+        batch += 1
 
     _save_checkpoint(td, batch)
     print('Finished training!')
